@@ -14,7 +14,7 @@ read_heliaphen <- function(file, experiment, position, header) {
 }
 
 # compute soil weight dynamics by plant code
-# TODO: set columns 
+# TODO: set columns and default path
 #' @export soil_weight
 soil_weight <- function(experiment, index, date_start) {
   
@@ -22,8 +22,10 @@ soil_weight <- function(experiment, index, date_start) {
   list_header_position <- c(1,6,7,9,11)
   # list header labels for these columns
   list_header_labels <- c("Plant_Code","Weight_test","Weight_t","Date","Weight_irrigated")
+  
   # list files to read
-  list_files <- data_frame(file=list.files(paste0("data/",experiment,"/raw"), full.names=TRUE, pattern="*.csv"))
+  path <- paste0("data/",experiment,"/raw")
+  list_files <- data_frame(file=list.files(path=path, full.names=TRUE, pattern="*.csv"))
   
   # read all csv files in target directory, remove duplicate rows, format date and remove row with date out of range
   data_weight <- list_files %>%
@@ -43,8 +45,8 @@ soil_weight <- function(experiment, index, date_start) {
       Weight_irrigated=ifelse(Weight_irrigated==0, Weight_t, Weight_irrigated)
     )
   
-  # add initial weight, replacing eventual NAs with mean initial value
-  # TODO: check if (1) row number == plant number or (2) use max value of Weight_t for initial weight
+  # add initial weight, replacing eventual NAs with mean initial value, then use max value of Weight_t for initial weight
+  # TODO: check if row number == plant number
   data_weight_init <- data_weight %>%
     filter(day(Date)==day(date_start)) %>%
     mutate(Weight_0=replace(Weight_t, is.na(Weight_t), as.integer(mean(Weight_t, na.rm=TRUE)))) %>%
@@ -82,6 +84,7 @@ soil_water_deficit <- function(data, index, date_start, date_end, weight_dead=45
   )
   
   # compute FTSW according to fixed TTSW
+  # TODO account for equipment of stressed pot
   # TODO: get mean TTSW from transpiration data 
   # TODO: use plant weight at last date as lower TTSW bound)
   # TODO: estimate plant weight and adjust pot weight
@@ -122,19 +125,19 @@ soil_water_deficit <- function(data, index, date_start, date_end, weight_dead=45
   )
 }
 
-# get list of harvestable stressed plants during date range, excluding those from previous dates
+# get list of harvestable plants during date range, excluding those from previous dates
 #' @export plant_harvest
-plant_harvest <- function(data, date_start, date_end) {
+plant_harvest <- function(data, date_start, date_end, threshold=0.1) {
   
   # get list of harvestable stressed plants during date range
   list_harvest <- data %>%
-    filter(Date >= date_start, Date <= date_end, FTSW < 0.1) %>%
+    filter(Treatment=="stress", Date >= date_start, Date <= date_end, FTSW < threshold) %>%
     group_by(Plant_Code) %>%
     distinct()
   
   # get plant codes already harvested
   list_harvest_done <- data %>%
-    filter(Date < date_start, FTSW < 0.1) %>%
+    filter(Treatment=="stress", Date < date_start, FTSW < threshold) %>%
     group_by(Plant_Code) %>%
     distinct()
   
@@ -150,6 +153,28 @@ plant_harvest <- function(data, date_start, date_end) {
   table_harvest <- bind_rows(list_harvest_stress, list_harvest_control) %>% arrange(Plant_Code)
   
   return(table_harvest)
+  
+}
+
+
+# write file for field notations from table of harvestable 
+#' @export write_heliaphen
+write_heliaphen <- function(data, leaf_position=seq(1,35, by=2)) {
+  
+  # create files for field observations
+  file_area <- tidyr::crossing(
+    Plant_Code=data$Plant_Code,
+    leaf=leaf_position
+  ) %>%
+    mutate(length=NA, width=NA, senescence=NA)
+  
+  file_architecture <- data_frame(
+    Plant_Code=data$Plant_Code,
+    plant_heigth=NA, stem_diameter=NA,
+    leaf_number=NA, plant_stage=NA 
+  )
+  
+  return(list(area=file_area, architecture=file_architecture))
   
 }
 
