@@ -37,17 +37,17 @@ interpolate_leaf_area <- function(x){
 #' @export interpolate_water_stress
 interpolate_water_stress <- function(x, time) {
   # linear interpolations
-  w <- with(x, approxfun(Date, Weight_t, rule = 2:1))
-  f <- with(x, approxfun(Date, FTSW, rule = 2:1))
-  i <- with(x, approxfun(Date, Irrigation, rule = 2:1))
+  w <- with(x, approxfun(time, weight, rule = 2:1))
+  f <- with(x, approxfun(time, FTSW, rule = 2:1))
+  i <- with(x, approxfun(time, irrigation, rule = 2:1))
   
   # return
-  r <- data.frame(
-    Date=time,
-    Weight_t=w(time),
+  output <- data.frame(
+    time=time,
+    weight=w(time),
     FTSW=f(time),
-    Irrigation=i(time)
+    irrigation=i(time)
   )
-  return(r)
+  return(output)
 }
 
