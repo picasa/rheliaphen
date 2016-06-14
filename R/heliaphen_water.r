@@ -75,7 +75,7 @@ soil_weight <- function(experiment, index, date_start) {
   data_weight <- data_weight_complete %>%
     left_join(data_weight_init) %>%
     select(plant_code, time, weight, weight_0, weight_water, irrigation) %>%
-    left_join(index)
+    left_join(index) %>% ungroup()
   
   return(data_weight)
   
