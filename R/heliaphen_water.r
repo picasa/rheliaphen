@@ -144,9 +144,6 @@ soil_water_deficit <- function(data, index, date_start, date_end, weight_dead, w
 #' @export plant_harvest
 plant_harvest <- function(data, date_start, date_end, threshold=0.1) {
   
-  # test format of date
-  
-  
   # get list of harvestable stressed plants during date range
   list_harvest <- data %>%
     filter(treatment=="stress", time >= date_start, time <= date_end, FTSW < threshold) %>%
@@ -159,15 +156,15 @@ plant_harvest <- function(data, date_start, date_end, threshold=0.1) {
     group_by(plant_code) %>%
     distinct()
   
-  
-  # common part
+  # get common subset of stressed plants
   list_harvest_stress <- anti_join(list_harvest, list_harvest_done, by="plant_code")
   
   # get corresponding control plants
+  # TODO fuzzy join with time to select appropriate control plant
   list_harvest_control <- semi_join(
-    data %>% filter(treatment=="control"),
+    data %>% filter(treatment=="control", time >= date_start, time <= date_end) %>% group_by(plant_code) %>% distinct(),
     list_harvest_stress,
-    by=c("time","genotype","repeat")
+    by=c("genotype","repeat")
   )
   
   table_harvest <- bind_rows(list_harvest_stress, list_harvest_control) %>% arrange(plant_code)
