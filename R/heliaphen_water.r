@@ -59,8 +59,9 @@ soil_weight <- function(experiment, index, date_start) {
   
   # bind pre and post irrigation weight, remove duplicated measure if no water was added, compute cumulated irrigation  
   data_weight_complete <- bind_rows(data_weight_pre, data_weight_post) %>%
-    group_by(plant_code, weight) %>% distinct() %>%
-    left_join(data_irrigation) %>% replace_na(list(weight_water=0)) %>% arrange(plant_code, time) %>%
+    distinct(plant_code, weight, .keep_all=TRUE) %>%
+    left_join(data_irrigation) %>%
+    replace_na(list(weight_water=0)) %>% arrange(plant_code, time) %>%
     group_by(plant_code) %>%
     mutate(irrigation=cumsum(weight_water))
     
@@ -147,22 +148,20 @@ plant_harvest <- function(data, date_start, date_end, threshold=0.1) {
   # get list of harvestable stressed plants during date range
   list_harvest <- data %>%
     filter(treatment=="stress", time >= date_start, time <= date_end, FTSW < threshold) %>%
-    group_by(plant_code) %>%
-    distinct()
-  
+    distinct(plant_code, .keep_all=TRUE)
+    
   # get plant codes already harvested
   list_harvest_done <- data %>%
     filter(treatment=="stress", time < date_start, FTSW < threshold) %>%
-    group_by(plant_code) %>%
-    distinct()
-  
+    distinct(plant_code, .keep_all=TRUE)
+    
   # get common subset of stressed plants
   list_harvest_stress <- anti_join(list_harvest, list_harvest_done, by="plant_code")
   
   # get corresponding control plants
   # TODO fuzzy join with time to select appropriate control plant
   list_harvest_control <- semi_join(
-    data %>% filter(treatment=="control", time >= date_start, time <= date_end) %>% group_by(plant_code) %>% distinct(),
+    data %>% filter(treatment=="control", time >= date_start, time <= date_end) %>% distinct(plant_code, .keep_all=TRUE),
     list_harvest_stress,
     by=c("genotype","repeat")
   )
