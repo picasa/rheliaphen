@@ -13,6 +13,24 @@ read_heliaphen <- function(file, experiment, position, header) {
   return(r)
 }
 
+# interpolate weight, irrigation and FTSW
+#' @export interpolate_water_stress
+interpolate_water_stress <- function(x, time) {
+  # linear interpolations
+  w <- with(x, approxfun(time, weight, rule = 2:1))
+  f <- with(x, approxfun(time, FTSW, rule = 2:1))
+  i <- with(x, approxfun(time, irrigation, rule = 2:1))
+  
+  # return
+  output <- data.frame(
+    time=time,
+    weight=w(time),
+    FTSW=f(time),
+    irrigation=i(time)
+  )
+  return(output)
+}
+
 # compute soil weight dynamics by plant code
 # TODO: set columns and default path
 #' @export soil_weight
@@ -117,7 +135,6 @@ soil_water_deficit <- function(data, index, date_start, date_end, weight_dead, w
     # return water deficit computed at timing of measurements
     measure = {
       data_ftsw_measure <- data_ftsw_measure %>% select(one_of(list_names))
-      
       return(data_ftsw_measure)
     },
     
