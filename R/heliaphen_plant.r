@@ -97,11 +97,11 @@ model_growth <- function(data) {
   # fit for default logictic model
   fit_nonlinear <- model_logistic(data)
   # fit for polynomial or linear model
-  if (is.na(fit_nonlinear)) {
+  if (is.na(fit_nonlinear[1])) {
     fit_linear <- if (nrow(data) > 2) model_polynomial(data) else model_linear(data)
   } 
   # select fit to return
-  return(if (is.na(fit_nonlinear)) fit_linear else fit_nonlinear)
+  return(if (is.na(fit_nonlinear[1])) fit_linear else fit_nonlinear)
 }
 
 # add interpolated data as a function of data and model
