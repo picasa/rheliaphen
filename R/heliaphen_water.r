@@ -103,11 +103,11 @@ soil_weight <- function(experiment, index, date_start) {
 
 # compute soil water deficit dynamics by plant code
 #' @export soil_water_deficit
-soil_water_deficit <- function(data, index, date_start, date_end, weight_dead, weight_hat=44, awc=0.39, timing="daily") {
+soil_water_deficit <- function(data, date_start, date_end, weight_dead, weight_hat=44, awc=0.39, timing="daily") {
   
   list_names <- c(
     "plant_code","time","weight","FTSW","irrigation",
-    "position","line", "column","genotype","treatment","repeat"
+    "position","line", "column","genotype","treatment","rep"
   )
   
   # correct pot weight according to experiment and design
@@ -134,26 +134,20 @@ soil_water_deficit <- function(data, index, date_start, date_end, weight_dead, w
     
     # return water deficit computed at timing of measurements
     measure = {
-      data_ftsw_measure <- data_ftsw_measure %>% select(one_of(list_names))
-      return(data_ftsw_measure)
+      data_measure <- data_ftsw_measure %>% select(one_of(list_names))
+      return(data_measure)
     },
     
     # compute daily pot weight and FTSW by linear interpolation to get regular 24h timesteps
     daily = {
       
-      data_ftsw_daily <- data_ftsw_measure %>%
-        ddply(
-          ~ plant_code,
-          plyr::failwith(NULL, interpolate_water_stress),
-          time=seq(date_start, date_end, by='days')
-        )
+      data_daily <- data_ftsw_measure %>% 
+        group_by(plant_code, position, line, column, genotype, treatment, rep) %>% 
+        do(failwith(NULL, interpolate_water_stress)(., time=seq(date_start, date_end, by='days'))) %>% 
+        mutate(d_weight=ifelse(treatment=="control", irrigation-lag(irrigation), -(weight-lag(weight)))) %>% 
+        select(plant_code, time, weight, d_weight, FTSW, irrigation, position:rep) %>% ungroup()
       
-      # add index
-      data_ftsw_daily <- data_ftsw_daily %>%
-        left_join(index) %>%
-        select(one_of(list_names))
-        
-      return(data_ftsw_daily)
+      return(data_daily)
     }
   )
 }
@@ -180,7 +174,7 @@ plant_harvest <- function(data, date_start, date_end, threshold=0.1) {
   list_harvest_control <- semi_join(
     data %>% filter(treatment=="control", time >= date_start, time <= date_end) %>% distinct(plant_code, .keep_all=TRUE),
     list_harvest_stress,
-    by=c("genotype","repeat")
+    by=c("genotype","rep")
   )
   
   table_harvest <- bind_rows(list_harvest_stress, list_harvest_control) %>% arrange(plant_code)

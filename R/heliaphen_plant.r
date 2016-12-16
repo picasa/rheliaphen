@@ -105,6 +105,7 @@ model_growth <- function(data) {
 }
 
 # add interpolated data as a function of data and model
+#' @export add_interpolation
 add_interpolation <- function(data, model) {
   
   # complete dataframe with missing timesteps 
