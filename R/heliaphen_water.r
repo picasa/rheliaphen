@@ -105,6 +105,10 @@ soil_weight <- function(experiment, index, date_start) {
 #' @export soil_water_deficit
 soil_water_deficit <- function(data, date_start, date_end, weight_dead, weight_hat=44, awc=0.39, timing="daily") {
   
+  # FTSW : Fraction of transpirable soil water
+  # TTSW : Total transpirable soil water (g)
+  # ATSW : Actual transpirable soil water (g)
+  
   list_names <- c(
     "plant_code","time","weight","FTSW","irrigation",
     "position","line", "column","genotype","treatment","rep"
@@ -118,14 +122,12 @@ soil_water_deficit <- function(data, date_start, date_end, weight_dead, weight_h
     )
   
   # compute FTSW according to fixed TTSW
-  # TODO account for equipment of stressed pot
   # TODO: get mean TTSW from transpiration data 
-  # TODO: use plant weight at last date as lower TTSW bound)
   # TODO: estimate plant weight and adjust pot weight
   data_ftsw_measure <- data_weight_soil %>%
     mutate(
-      TTSW=weight_soil_0 - weight_soil_0 * awc,
-      ATSW=weight_soil_t - weight_soil_0 * awc,
+      TTSW=weight_soil_0 * awc,
+      ATSW=weight_soil_t - (weight_soil_0 * (1 - awc))  ,
       FTSW=ATSW/TTSW
     )
   

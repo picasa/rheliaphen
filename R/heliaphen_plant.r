@@ -135,7 +135,7 @@ interpolate_area_node <- function(data){
   
   # test for plants that were not measured
   if(length(data$length[!is.na(data$length)]) == 0) {
-    return(NULL)
+    return(data.frame(NULL))
   } else {
     
     # create senescence coding for specific case (measured value and senescence)
