@@ -77,19 +77,19 @@ area_dynamics <- function(data) {
 
 # logistic model wrapper
 #' @export model_logistic
-model_logistic <- function(data) {failwith(NA, nls, quiet=TRUE)(area ~ SSlogis(day, Asym, xmid, scal), data=data)}
+model_logistic <- function(data) {possibly(nls, NA)(area ~ SSlogis(day, Asym, xmid, scal), data=data)}
 
 # linar model wrapper
 #' @export model_linear
-model_linear <- function(data) {failwith(NA, lm, quiet=TRUE)(area ~ day, data=data)}
+model_linear <- function(data) {possibly(lm, NA)(area ~ day, data=data)}
 
 # polynomial model wrapper
 #' @export model_polynomial
-model_polynomial <- function(data) {failwith(NA, lm, quiet=TRUE)(area ~ poly(day, 2), data=data)}
+model_polynomial <- function(data) {possibly(lm, NA)(area ~ poly(day, 2), data=data)}
 
 # splines model wrapper
 #' @export model_splines
-model_splines <- function(data) {failwith(NA, lm, quiet=TRUE)(area ~ splines::bs(day, 3), data=data)}
+model_splines <- function(data) {possibly(lm, NA)(area ~ splines::bs(day, 3), data=data)}
 
 # growth model wrapper
 #' @export model_growth
