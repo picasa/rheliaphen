@@ -145,7 +145,7 @@ soil_water_deficit <- function(data, date_start, date_end, weight_dead, weight_h
       
       data_daily <- data_ftsw_measure %>% 
         group_by(plant_code, position, line, column, genotype, treatment, rep) %>% 
-        do(possibly(interpolate_water_stress, NULL)(., time=seq(date_start, date_end, by='days'))) %>% 
+        do(possibly(interpolate_water_stress, data.frame(NULL))(., time=seq(date_start, date_end, by='days'))) %>% 
         mutate(d_weight=ifelse(treatment=="control", irrigation-lag(irrigation), -(weight-lag(weight)))) %>% 
         select(plant_code, time, weight, d_weight, FTSW, irrigation, position:rep) %>% ungroup()
       
