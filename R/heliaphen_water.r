@@ -103,7 +103,7 @@ soil_weight <- function(experiment, index, date_start) {
 
 # compute soil water deficit dynamics by plant code
 #' @export soil_water_deficit
-soil_water_deficit <- function(data, date_start, date_end, weight_dead, weight_hat=44, awc=0.39, timing="daily") {
+soil_water_deficit <- function(data, date_start, date_end, weight_dead, weight_hat=44, awc=0.61, timing="daily") {
   
   # FTSW : Fraction of transpirable soil water
   # TTSW : Total transpirable soil water (g)
