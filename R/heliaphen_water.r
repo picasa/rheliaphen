@@ -1,5 +1,7 @@
 # Soil functions and variables
 
+safe_max <- function(x) ifelse( !all(is.na(x)), max(x, na.rm=TRUE), NA)
+
 # read heliaphen formatted files
 #' @export read_heliaphen
 read_heliaphen <- function(file, experiment, position, header) {
@@ -87,7 +89,7 @@ soil_weight <- function(experiment, index, date_start) {
   data_weight_init <- data_weight_complete %>%
     filter(day(time)==day(date_start)) %>%
     group_by(plant_code) %>%
-    summarise(weight_0=max(weight, na.rm=TRUE)) %>% ungroup() %>%
+    summarise(weight_0=safe_max(weight)) %>% ungroup() %>%
     mutate(weight_0=replace(weight_0, is.na(weight_0), as.integer(mean(weight_0, na.rm=TRUE))))
       
   # add initial weight and index
