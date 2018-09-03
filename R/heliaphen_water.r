@@ -15,18 +15,18 @@ read_heliaphen <- function(file, experiment, position, header) {
   return(r)
 }
 
-# interpolate weight, irrigation and FTSW
+# interpolate soil weight, irrigation and FTSW
 #' @export interpolate_water_stress
-interpolate_water_stress <- function(x, time) {
+interpolate_water_stress <- function(data, time) {
   # linear interpolations
-  w <- with(x, approxfun(time, weight, rule = 2:1))
-  f <- with(x, approxfun(time, FTSW, rule = 2:1))
-  i <- with(x, approxfun(time, irrigation, rule = 2:1))
+  w <- with(data, approxfun(time, weight_soil_t, rule = 2:1))
+  f <- with(data, approxfun(time, FTSW, rule = 2:1))
+  i <- with(data, approxfun(time, irrigation, rule = 2:1))
   
   # return
   output <- data.frame(
     time=time,
-    weight=w(time),
+    weight_soil_t=w(time),
     FTSW=f(time),
     irrigation=i(time)
   )
@@ -111,22 +111,23 @@ soil_water_deficit <- function(data, date_start, date_end, weight_dead, weight_h
   # TTSW : Total transpirable soil water (g)
   # ATSW : Actual transpirable soil water (g)
   
+  # TODO: get mean TTSW from transpiration data 
+  # TODO: estimate plant weight dynamics and correct pot weight accordingly
+  
   list_names <- c(
-    "plant_code","time","weight","FTSW","irrigation",
+    "plant_code","time","weight","weight_soil_t","weight_soil_0","FTSW","irrigation",
     "position","line", "column","genotype","treatment","rep"
   )
   
-  # correct pot weight according to experiment and design
+  # correct pot weight according to experiment (pot weight) and design (hats on stressed plants)
   data_weight_soil <- data %>%
     mutate(
       weight_soil_t=ifelse(treatment=="stress", weight-weight_dead-weight_hat, weight-weight_dead),
       weight_soil_0=ifelse(treatment=="stress", weight_0-weight_dead-weight_hat, weight_0-weight_dead)
     )
-  
+
   # compute FTSW according to fixed TTSW
-  # TODO: get mean TTSW from transpiration data 
-  # TODO: estimate plant weight and adjust pot weight
-  data_ftsw_measure <- data_weight_soil %>%
+  data_water_measure <- data_weight_soil %>%
     mutate(
       TTSW=weight_soil_0 * awc,
       ATSW=weight_soil_t - (weight_soil_0 * (1 - awc))  ,
@@ -138,18 +139,18 @@ soil_water_deficit <- function(data, date_start, date_end, weight_dead, weight_h
     
     # return water deficit computed at timing of measurements
     measure = {
-      data_measure <- data_ftsw_measure %>% select(one_of(list_names))
+      data_measure <- data_water_measure %>% select(one_of(list_names))
       return(data_measure)
     },
     
     # compute daily pot weight and FTSW by linear interpolation to get regular 24h timesteps
     daily = {
       
-      data_daily <- data_ftsw_measure %>% 
+      data_daily <- data_water_measure %>% 
         group_by(plant_code, position, line, column, genotype, treatment, rep) %>% 
         do(possibly(interpolate_water_stress, data.frame(NULL))(., time=seq(date_start, date_end, by='days'))) %>% 
-        mutate(d_weight=ifelse(treatment=="control", irrigation-lag(irrigation), -(weight-lag(weight)))) %>% 
-        select(plant_code, time, weight, d_weight, FTSW, irrigation, position:rep) %>% ungroup()
+        mutate(water_loss=ifelse(treatment=="control", irrigation-lag(irrigation), -(weight_soil_t-lag(weight_soil_t)))) %>% 
+        select(plant_code, time, weight_soil_t, water_loss, FTSW, irrigation, position:rep) %>% ungroup()
       
       return(data_daily)
     }
