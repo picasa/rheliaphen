@@ -68,7 +68,7 @@ area_dynamics <- function(data) {
   
   # get interpolated data
   data_area <- data_model %>%
-    unnest(interpolation) 
+    unnest(interpolation, .drop=TRUE) 
   
   return(data_area)
   
