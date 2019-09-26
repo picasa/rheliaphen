@@ -144,12 +144,25 @@ soil_water_deficit <- function(data, date_start, date_end, weight_dead, weight_h
     },
     
     # compute daily pot weight and FTSW by linear interpolation to get regular 24h timesteps
+    # water loss is computed :
+    # for stressed plants, water loss is the difference in pot weight
+    # for control plants, water loss is equal to the irrigation (or difference in pot weight if irrigation is null)
     daily = {
       
       data_daily <- data_water_measure %>% 
         group_by(plant_code, position, line, column, genotype, treatment, rep) %>% 
         do(possibly(interpolate_water_stress, data.frame(NULL))(., time=seq(date_start, date_end, by='days'))) %>% 
-        mutate(water_loss=ifelse(treatment=="control", irrigation-lag(irrigation), -(weight_soil_t-lag(weight_soil_t)))) %>% 
+        mutate(
+          lag_irrigation = irrigation - lag(irrigation),
+          lag_weight = - (weight_soil_t - lag(weight_soil_t))
+        ) %>% 
+        mutate(
+          water_loss = case_when(
+            treatment == "control" & lag_weight > lag_irrigation ~ lag_weight,
+            treatment == "control" ~ lag_irrigation,
+            treatment == "stress" ~ lag_weight,
+            TRUE ~ lag_weight
+          )) %>% 
         select(plant_code, time, weight_soil_t, water_loss, FTSW, irrigation, position:rep) %>% ungroup()
       
       return(data_daily)
