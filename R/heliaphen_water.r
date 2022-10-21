@@ -45,12 +45,14 @@ soil_weight <- function(experiment, index, date_start) {
   
   # list files to read
   path <- paste0("data/",experiment,"/raw")
-  list_files <- data_frame(file=list.files(path=path, full.names=TRUE, pattern="*.csv"))
+  list_files <- tibble(file=list.files(path=path, full.names=TRUE, pattern="*.csv"))
   
   # read all csv files in target directory, remove duplicate rows, format date and remove row with date out of range
   data_weight_raw <- list_files %>%
     group_by(file) %>%
-    do(read_heliaphen(file=.$file, experiment, position=list_header_position, header=list_header_labels)) %>%
+    do(read_heliaphen(
+      file=.$file, experiment,
+      position=list_header_position, header=list_header_labels)) %>%
     ungroup() %>%
     select(-file) %>%
     distinct() %>% 
@@ -74,7 +76,8 @@ soil_weight <- function(experiment, index, date_start) {
  
   # compute added water as (weight_irrigated - weight_t), 0 if failed measurements
   data_irrigation <- data_weight_raw %>%
-    mutate(weight_water=as.integer(ifelse(is.na(weight_t), 0, weight_irrigated - weight_t))) %>% 
+    mutate(weight_water = ifelse(is.na(weight_t), 0, weight_irrigated - weight_t) %>%
+             as.integer()) %>% 
     select(plant_code, time, weight_water) 
   
   # bind pre and post irrigation weight, remove duplicated measure if no water was added, compute cumulated irrigation  
@@ -213,7 +216,7 @@ write_heliaphen <- function(data, leaf_position=seq(1,35, by=2)) {
     ) %>%
     mutate(length=NA, width=NA, senescence=NA)
   
-  file_architecture <- data_frame(
+  file_architecture <- tibble(
     plant_code=data$plant_code,
     plant_heigth=NA, stem_diameter=NA,
     leaf_number=NA, plant_stage=NA 

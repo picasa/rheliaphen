@@ -17,4 +17,4 @@ Imports:
     lubridate,
     ggplot2
 License: GPL
-RoxygenNote: 6.1.0
+RoxygenNote: 7.2.1

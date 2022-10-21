@@ -3,6 +3,7 @@
 export(add_interpolation)
 export(area_dynamics)
 export(area_nodes)
+export(area_predict)
 export(area_raw)
 export(interpolate_area_node)
 export(interpolate_water_stress)

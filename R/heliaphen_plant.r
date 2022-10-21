@@ -2,23 +2,49 @@
 
 # read and tidy raw leaf area data
 #' @export area_raw
-area_raw <- function(experiment, index) {
+area_raw <- function(experiment, index, method = "manual") {
+  
   # read heliaphen input file
   path <- paste0("data/",experiment,"/phenotype")
-  data <- read_excel(paste0(path,"/",experiment,"_phenotype.xlsx"), sheet="area") 
-  
-  # remove lines corresponding to missing measurements and format dataset
-  data <- data %>%
-    filter(!(is.na(length) & is.na(width) & is.na(senescence))) %>%
-    mutate(
-      time=ymd(as.Date(time, origin="1899-12-30"), tz="Europe/Paris"),
-      senescence=ifelse(is.na(senescence), 0, senescence)
-    )
-  
-  # compute leaf area from length and width variables
-  data <- data %>%
-    mutate(area=leaf_size(length, width)) %>% 
-    left_join(index)
+
+  switch(
+    method,
+    
+    # leaf measurements include length and width
+    manual = {
+      
+      data <- read_excel(paste0(path,"/",experiment,"_phenotype.xlsx"), sheet="area") 
+      
+      # remove lines corresponding to missing measurements and format dataset
+      data <- data %>%
+        filter(!(is.na(length) & is.na(width) & is.na(senescence))) %>%
+        mutate(
+          time = ymd(as.Date(time, origin="1899-12-30"), tz="Europe/Paris"),
+          senescence = ifelse(is.na(senescence), 0, senescence)
+        )
+      
+      # compute leaf area from length and width variables
+      data <- data %>%
+        mutate(area = leaf_size(length, width)) %>% 
+        left_join(index)
+    },
+    
+    # leaf measurements include only area
+    sensor = {
+      
+      data <- read_excel(paste0(path,"/",experiment,"_phenotype.xlsx"), sheet="sensor") 
+      
+      # remove lines corresponding to missing measurements and format dataset
+      data <- data %>%
+        filter(!(is.na(area) & is.na(senescence))) %>%
+        mutate(
+          time = ymd(as.Date(time, origin="1899-12-30"), tz="Europe/Paris"),
+          senescence = ifelse(is.na(senescence), 0, senescence)
+        )
+      
+      data <- data %>% left_join(index)
+    }
+  )
   
   return(data)
 }
@@ -75,9 +101,59 @@ area_dynamics <- function(data) {
 }
 
 
+# predict plant leaf area from image analysis
+#' @export area_predict
+area_predict <- function(experiment, index, model) {
+  
+  # read heliaphen input file
+  path <- paste0("data/",experiment,"/phenotype")
+  
+  # read features from ipsophen
+  data_area_image <- read_csv(glue::glue("{path}/{experiment}_ipsophen.csv"))
+  
+  # shape raw data
+  data_area_raw <- data_area_image %>% 
+    mutate(
+      time = date_time,
+      day = yday(time),
+      experiment = str_to_upper(experiment),
+      position = str_to_upper(plant)) %>% 
+    left_join(index, by = c("experiment", "position")) %>% 
+    select(
+      plant_code, treatment, genotype, rep, time, day,
+      area_sens = area, hull_area, shape_height) 
+  
+  # predict plant area from selected features using a linear model, average per day
+  data_prediction_raw <- data_area_raw %>% add_predictions(model) %>% 
+    filter(pred > 0) %>% 
+    group_by(plant_code, treatment, genotype, rep, time = as.Date(time), day) %>% 
+    summarise(area = mean(pred), area_sd = sd(pred)) 
+  
+  # post-process predictions : remove plant with low growth and smooth dynamics with spline 
+  data_prediction_post <- data_prediction_raw %>% 
+    group_by(plant_code) %>% nest() %>% 
+    mutate(growth = map_dbl(data, ~ (last(.x$area) - first(.x$area)) / first(.x$area))) %>% 
+    filter(growth > 1) %>% 
+    mutate(
+      model = map(data, model_splines),
+      prediction = map2(data, model, add_predictions, var="area_splines")
+    ) %>%
+    select(-data, -model, -growth) %>% unnest(prediction) |> 
+    mutate(
+      time = ymd(time, tz="Europe/Paris"),
+      area = area_splines) %>%
+    select(plant_code:area)
+    
+  return(data_prediction_post)
+  
+}
+
+
 # logistic model wrapper
 #' @export model_logistic
-model_logistic <- function(data) {possibly(nls, NA)(area ~ SSlogis(day, Asym, xmid, scal), data=data)}
+model_logistic <- function(data) {
+  possibly(nls, NA)(area ~ SSlogis(day, Asym, xmid, scal), data=data)
+}
 
 # linar model wrapper
 #' @export model_linear
