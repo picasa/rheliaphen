@@ -1,20 +1,27 @@
 Package: rheliaphen
 Title: Tools for phenotyping and modeling with the Heliaphen sunflower
-    phenotyping platform.
+    phenotyping platform
 Description: A set of tools for working with the Heliaphen phenotyping platform
     to (1) estimate water deficit, leaf and plant area from raw datasets, (2)
     compute complex traits (leaf expansion rate, plant transpiration rate, plant
-    senescence rate) from phenotyped data and (3) model the response of complex
-    traits to soil and climatic water deficit.
-Version: 0.1
-Author: Pierre Casadebaig <pierre.casadebaig@inra.fr>
-Maintainer: Pierre Casadebaig <pierre.casadebaig@inra.fr>
+    senescence rate) from phenotyped data and (3) model the trait response to
+    soil and climatic water deficit.
+Version: 1.0
+Author: Pierre Casadebaig <pierre.casadebaig@inrae.fr>
+Maintainer: Pierre Casadebaig <pierre.casadebaig@inrae.fr>
 URL: https://github.com/picasa/rheliaphen
 BugReports: https://github.com/picasa/rheliaphen/issues
 Imports:
+    readr,
+    readxl,
+    modelr,
     tidyr,
     dplyr,
-    lubridate,
-    ggplot2
+    purrr,
+    lubridate
+Suggests:
+    zoo,
+    glue,
+    stringr
 License: GPL
 RoxygenNote: 7.2.1
