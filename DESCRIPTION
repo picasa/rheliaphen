@@ -12,6 +12,7 @@ Maintainer: Pierre Casadebaig <pierre.casadebaig@inrae.fr>
 URL: https://github.com/picasa/rheliaphen
 BugReports: https://github.com/picasa/rheliaphen/issues
 Imports:
+    magrittr,
     readr,
     readxl,
     modelr,
@@ -24,4 +25,4 @@ Suggests:
     glue,
     stringr
 License: GPL
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.3

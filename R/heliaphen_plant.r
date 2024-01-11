@@ -101,8 +101,14 @@ area_dynamics <- function(data) {
 }
 
 
-# predict plant leaf area from image analysis
-#' @export area_predict
+#' Predict plant leaf area from input features extracted with image analysis.
+#' @param experiment experiment code (character string)
+#' @param index experimental design (dataframe)
+#' @param model fitted model used for prediction (glm model object)
+#' @param min minimal growth threshold used to discard plant from analysis (numeric, default to 0.5, i.e. +50\% growth)
+#' @return a dataframe for predicted plant leaf area.
+#' @export 
+#' 
 area_predict <- function(experiment, index, model, min = 0.5) {
   
   # read features from ipsophen
